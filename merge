@@ -1,0 +1,39 @@
+#!/bin/bash
+report_failure() {
+    echo "MERGE_FAILED=1" >> "$GITHUB_ENV"
+    echo '::set-output name=status::failed'
+    echo "::set-output name=message::$1"
+    if [ -z "$INPUT_DO_NOT_REPORT" ]; then
+        echo "::error ::$1"
+    fi
+    exit 0
+}
+
+cd "$INPUT_PATH" || report_failure "Could not change to input_path ($INPUT_PATH)"
+SENDER=$(jq -r .sender.login "$GITHUB_EVENT_PATH")
+USER_JSON=$(mktemp)
+curl -s "$GITHUB_API_URL/users/$SENDER" -o "$USER_JSON"
+export GIT_AUTHOR_NAME=$(jq -r .name "$USER_JSON")
+export GIT_AUTHOR_EMAIL=$(jq -r '.email // empty' "$USER_JSON")
+if [ -z "$GIT_AUTHOR_EMAIL" ]; then
+    GIT_AUTHOR_EMAIL=$(jq -r '( (.id|tostring) + "+" + .login + "@users.noreply.github.com")' "$GITHUB_EVENT_PATH")
+fi
+export GIT_COMMITTER_NAME=GitHub
+export GIT_COMMITTER_EMAIL=noreply@github.com
+git fetch --unshallow origin "$INPUT_BASE_REF" ||
+    report_failure "Can't get history for base_ref ($INPUT_BASE_REF). Please contact support"
+GITHUB_BASE_SHA=$(git rev-parse FETCH_HEAD)
+
+git -c advice.detachedHead=false checkout "$GITHUB_BASE_SHA" || {
+    git status
+    report_failure "Couldn't check out base_ref ($INPUT_BASE_REF); repository is probably dirty."
+}
+
+git fetch origin "$INPUT_HEAD_REF" ||
+    report_failure "Can't get head_ref ($INPUT_HEAD_REF). Please contact support"
+
+GITHUB_HEAD_SHA=$(git rev-parse FETCH_HEAD)
+git merge -m "Merge $GITHUB_HEAD_SHA into $GITHUB_BASE_SHA" FETCH_HEAD ||
+    report_failure "Can't generate merge; there's probably a conflict. Resolve it to get workflow feedback."
+
+echo '::set-output name=status::success'
