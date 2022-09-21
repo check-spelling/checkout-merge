@@ -21,7 +21,7 @@ fi
 export GIT_COMMITTER_NAME=GitHub
 export GIT_COMMITTER_EMAIL=noreply@github.com
 git fetch --unshallow origin "$INPUT_BASE_REF" ||
-    report_failure "Can't get history for base_ref ($INPUT_BASE_REF). Please contact support"
+    report_failure "Can't get history for base_ref ($INPUT_BASE_REF). Please contact support for $GITHUB_ACTION_REPOSITORY"
 GITHUB_BASE_SHA=$(git rev-parse FETCH_HEAD)
 
 git -c advice.detachedHead=false checkout "$GITHUB_BASE_SHA" || {
@@ -30,7 +30,7 @@ git -c advice.detachedHead=false checkout "$GITHUB_BASE_SHA" || {
 }
 
 git fetch origin "$INPUT_HEAD_REF" ||
-    report_failure "Can't get head_ref ($INPUT_HEAD_REF). Please contact support"
+    report_failure "Can't get head_ref ($INPUT_HEAD_REF). Please contact support for $GITHUB_ACTION_REPOSITORY"
 
 GITHUB_HEAD_SHA=$(git rev-parse FETCH_HEAD)
 git merge -m "Merge $GITHUB_HEAD_SHA into $GITHUB_BASE_SHA" FETCH_HEAD ||
