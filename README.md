@@ -23,7 +23,7 @@ for users to understand, and allow you to decide whether your workflow should
 
 ```yaml
     - name: checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: checkout-merge
       if: "contains(github.event_name, 'pull_request')"
       uses: check-spelling/checkout-merge@main
