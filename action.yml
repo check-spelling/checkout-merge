@@ -41,4 +41,5 @@ runs:
         INPUT_HEAD_REF: ${{ inputs.head_ref }}
         INPUT_PATH: ${{ inputs.path }}
         INPUT_DO_NOT_REPORT: ${{ inputs.do_not_report }}
+        GH_TOKEN: ${{ github.token }}
       run: ${{ github.action_path }}/merge
