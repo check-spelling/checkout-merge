@@ -1,4 +1,44 @@
 #!/bin/bash
+
+command_v() {
+    command -v "$1" >/dev/null 2>/dev/null
+}
+
+add_app() {
+    if ! command_v "$1"; then
+        apps="$apps $@"
+    fi
+}
+
+install_tools() {
+    if [ -n "$apps" ]; then
+        export DEBIAN_FRONTEND=noninteractive
+        $SUDO apt-get -qq update &&
+        $SUDO apt-get -qq install --no-install-recommends -y $apps >/dev/null 2>/dev/null
+        echo "Installed: $apps" >&2
+        apps=
+    fi
+}
+
+install_gh() {
+    if [ "$(id -u)" != 0 ]; then
+        SUDO=sudo
+    fi
+    add_app curl
+    install_tools
+    if command_v apt-get &&
+        ! apt-cache policy gh |
+            grep -q Candidate:; then
+        curl -f -s -S -L https://cli.github.com/packages/githubcli-archive-keyring.gpg |
+        $SUDO dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg 2> /dev/null
+        $SUDO chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" |
+        $SUDO tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+    fi
+    add_app gh
+    install_tools
+}
+
 report_failure() {
     echo "MERGE_FAILED=1" >> "$GITHUB_ENV"
     echo 'status=failed' >> "$GITHUB_OUTPUT"
@@ -8,6 +48,8 @@ report_failure() {
     fi
     exit 0
 }
+
+command_v gh || install_gh
 
 cd "$INPUT_PATH" || report_failure "Could not change to input_path ($INPUT_PATH)"
 SENDER=$(jq -r .sender.login "$GITHUB_EVENT_PATH")
