@@ -54,9 +54,16 @@ command_v gh || install_gh
 cd "$INPUT_PATH" || report_failure "Could not change to input_path ($INPUT_PATH)"
 SENDER=$(jq -r .sender.login "$GITHUB_EVENT_PATH")
 USER_JSON=$(mktemp)
-gh api "/users/$SENDER" > "$USER_JSON"
+(
+    gh api "/users/$SENDER" ||
+    curl -s "$GITHUB_API_URL/users/$SENDER" ||
+    echo '{"id": 0, "login": "unknown"}'
+) > "$USER_JSON"
 export GIT_AUTHOR_NAME=$(jq -r .name "$USER_JSON")
 export GIT_AUTHOR_EMAIL=$(jq -r '.email // empty' "$USER_JSON")
+if [ -z "$GIT_AUTHOR_NAME" ]; then
+    GIT_AUTHOR_NAME="$GITHUB_ACTOR"
+fi
 if [ -z "$GIT_AUTHOR_EMAIL" ]; then
     GIT_AUTHOR_EMAIL=$(jq -r '.pusher.email // empty' "$GITHUB_EVENT_PATH")
     if [ -z "$GIT_AUTHOR_EMAIL" ]; then
