@@ -45,6 +45,11 @@ report_failure() {
     echo "message=$1" >> "$GITHUB_OUTPUT"
     if [ -z "$INPUT_DO_NOT_REPORT" ]; then
         echo "::error ::$1"
+        if [ -f "$GITHUB_STEP_SUMMARY" ]; then
+            echo "# checkout-merge failed
+
+:x: $1" >> "$GITHUB_STEP_SUMMARY"
+        fi
     fi
     exit 0
 }
