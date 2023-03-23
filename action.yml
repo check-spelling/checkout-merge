@@ -9,7 +9,7 @@ inputs:
     description: |
       This commit will be refetched (to give the merge the best chance of
       succceeding) and used as the base for the merge.
-    default: ${{ github.event.pull_request.base.sha }}
+    default: ${{ github.event.pull_request.base.ref }}
     required: false
   head_ref:
     description: |
