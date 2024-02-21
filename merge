@@ -93,7 +93,10 @@ git fetch origin "$INPUT_HEAD_REF" ||
     report_failure "Can't get head_ref ($INPUT_HEAD_REF). Please contact support for $GITHUB_ACTION_REPOSITORY"
 
 GITHUB_HEAD_SHA=$(git rev-parse FETCH_HEAD)
-git merge -m "Merge $GITHUB_HEAD_SHA into $GITHUB_BASE_SHA" FETCH_HEAD ||
-    report_failure "Can't generate merge; there's probably a conflict. Resolve it to get workflow feedback."
+echo '::group::Merging'
+git merge -m "Merge $GITHUB_HEAD_SHA into $GITHUB_BASE_SHA" FETCH_HEAD &&
+    echo '::endgroup::' ||
+    report_failure "Can't generate merge; there's probably a conflict. Resolve it to get workflow feedback." &&
+    echo '::endgroup::'
 
 echo 'status=success' >> "$GITHUB_OUTPUT"
