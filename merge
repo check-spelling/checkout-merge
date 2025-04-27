@@ -39,6 +39,24 @@ install_gh() {
     install_tools
 }
 
+wrap_in_backticks() {
+    b=$(
+        perl -e 'my $longest = 2;
+        while (<>) {
+            while (/(`+)/g) {
+                my $length = length $1;
+                $longest = $length if $length > $longest;
+            }
+        }
+        my $q = q<`>x ($longest + 1);
+        print $q;
+        ' "$1"
+    )
+    echo "$b"
+    cat "$1"
+    echo "$b"
+}
+
 report_failure() {
     echo "MERGE_FAILED=1" >> "$GITHUB_ENV"
     echo 'status=failed' >> "$GITHUB_OUTPUT"
@@ -49,12 +67,19 @@ report_failure() {
             echo "# checkout-merge failed
 
 :x: $1" >> "$GITHUB_STEP_SUMMARY"
+            if [ -s "$log" ]; then
+                echo
+                wrap_in_backticks "$log"
+            fi
         fi
     fi
     exit 0
 }
 
 command_v gh || install_gh
+
+log=$(mktemp)
+merge_log=$(mktemp)
 
 cd "$INPUT_PATH" || report_failure "Could not change to input_path ($INPUT_PATH)"
 SENDER=$(jq -r .sender.login "$GITHUB_EVENT_PATH")
@@ -94,9 +119,18 @@ git fetch origin "$INPUT_HEAD_REF" ||
 
 GITHUB_HEAD_SHA=$(git rev-parse FETCH_HEAD)
 echo '::group::Merging'
-git merge -m "Merge $GITHUB_HEAD_SHA into $GITHUB_BASE_SHA" FETCH_HEAD &&
-    echo '::endgroup::' ||
-    report_failure "Can't generate merge; there's probably a conflict. Resolve it to get workflow feedback." &&
+if !(git merge -m "Merge $GITHUB_HEAD_SHA into $GITHUB_BASE_SHA" FETCH_HEAD 2>&1) > "$merge_log"; then
+    cat "$merge_log"
     echo '::endgroup::'
+    if grep '^CONFLICT ' "$merge_log" > "$log"; then
+        report_failure "Can't generate merge; there's a conflict. Resolve it to get workflow feedback."
+    else
+        cp "$merge_log" "$log"
+        report_failure "Can't generate merge; there's might be a conflict. Resolve it to get workflow feedback."
+    fi
+fi
+
+cat "$merge_log"
+echo '::endgroup::'
 
 echo 'status=success' >> "$GITHUB_OUTPUT"
