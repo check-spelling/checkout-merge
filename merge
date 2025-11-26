@@ -39,6 +39,14 @@ install_gh() {
     install_tools
 }
 
+group_begin() {
+    echo "::group ::$1"
+}
+
+group_end() {
+    echo '::endgroup::'
+}
+
 wrap_in_backticks() {
     b=$(
         perl -e 'my $longest = 2;
@@ -105,6 +113,8 @@ export GIT_COMMITTER_EMAIL=noreply@github.com
 if [ "$(git rev-parse --is-shallow-repository)" = 'true' ]; then
     UNSHALLOW=--unshallow
 fi
+
+group_begin Fetching
 git fetch $UNSHALLOW origin "$INPUT_BASE_REF" ||
     report_failure "Can't get history for base_ref ($INPUT_BASE_REF). Please contact support for $GITHUB_ACTION_REPOSITORY"
 GITHUB_BASE_SHA=$(git rev-parse FETCH_HEAD)
@@ -118,10 +128,12 @@ git fetch origin "$INPUT_HEAD_REF" ||
     report_failure "Can't get head_ref ($INPUT_HEAD_REF). Please contact support for $GITHUB_ACTION_REPOSITORY"
 
 GITHUB_HEAD_SHA=$(git rev-parse FETCH_HEAD)
-echo '::group::Merging'
+group_end
+
+group_begin Merging
 if !(git merge -m "Merge $GITHUB_HEAD_SHA into $GITHUB_BASE_SHA" FETCH_HEAD 2>&1) > "$merge_log"; then
     cat "$merge_log"
-    echo '::endgroup::'
+    group_end
     if grep '^CONFLICT ' "$merge_log" > "$log"; then
         report_failure "Can't generate merge; there's a conflict. Resolve it to get workflow feedback."
     else
@@ -131,6 +143,6 @@ if !(git merge -m "Merge $GITHUB_HEAD_SHA into $GITHUB_BASE_SHA" FETCH_HEAD 2>&1
 fi
 
 cat "$merge_log"
-echo '::endgroup::'
+group_end
 
 echo 'status=success' >> "$GITHUB_OUTPUT"
