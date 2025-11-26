@@ -1,6 +1,8 @@
 name: Word Counts
 on:
   pull_request_target:
+  push:
+  workflow_dispatch:
 
 jobs:
   count:
@@ -9,13 +11,14 @@ jobs:
       contents: read
       pull-requests: read
     runs-on: ubuntu-latest
-    if: "contains(github.event_name, 'pull_request') || github.event_name == 'push'"
     steps:
     - name: checkout
       uses: actions/checkout@v6
     - name: checkout-merge
-      if: "contains(github.event_name, 'pull_request')"
       uses: ./
+      with:
+        base_ref: ${{ !contains(github.event_name, 'pull_request') && 'a91d01d8f66ebf2f1a93d993f0ef220b150506a8' || github.event.pull_request.base.ref }}
+        head_ref: ${{ !contains(github.event_name, 'pull_request') && 'b745ec76dda1b6fa277b6e460540a55cb97ae248' || github.event.pull_request.head.sha }}
     - name: check-count
       if: env.MERGE_FAILED != '1'
       id: count
