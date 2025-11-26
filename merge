@@ -84,6 +84,14 @@ report_failure() {
     exit 0
 }
 
+maybe_debug() {
+    if [ "$GITHUB_RUN_ATTEMPT" != 1 ] || [ -n "$ACTIONS_STEP_DEBUG" ]; then
+        set -x
+    fi
+}
+
+maybe_debug
+
 command_v gh || install_gh
 
 log=$(mktemp)
