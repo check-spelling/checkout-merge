@@ -42,4 +42,4 @@ runs:
         INPUT_PATH: ${{ inputs.path }}
         INPUT_DO_NOT_REPORT: ${{ inputs.do_not_report }}
         GH_TOKEN: ${{ github.token }}
-      run: ${{ github.action_path }}/merge
+      run: ${{ github.action_path }}${{ !endsWith(github.action_path, '/') && '/' || ''}}merge
