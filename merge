@@ -152,7 +152,7 @@ if !(git merge -m "Merge $GITHUB_HEAD_SHA into $GITHUB_BASE_SHA" FETCH_HEAD 2>&1
         report_failure "Can't generate merge; there's a conflict. Resolve it to get workflow feedback."
     else
         cp "$merge_log" "$log"
-        report_failure "Can't generate merge; there's might be a conflict. Resolve it to get workflow feedback."
+        report_failure "Can't generate merge; there might be a conflict. Resolve it to get workflow feedback."
     fi
 fi
 
